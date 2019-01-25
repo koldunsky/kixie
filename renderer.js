@@ -113,7 +113,8 @@ function handleCursor(screens) {
       width: 1,
       height: 1
     });
-    console.info(display.id);
+    console.info(screen.getCursorScreenPoint());
+    console.info(display);
   }, 16);
   console.info(screens);
 }
