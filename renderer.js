@@ -26,8 +26,11 @@ desktopCapturer.getSources({types: ['screen']}, (error, sources) => {
 
   if (multipleScreens.length) {
     multipleScreens.forEach((screen) => {
-      const [display] = displays.filter((d) => d.id === screen.id);
+      const [display] = displays.filter((d) => d.id === parseInt(screen.display_id, 10));
 
+      console.info(screen, displays);
+
+      handleCursor([screen]);
       getUserMedia(screen, display).then((stream) => handleStream(stream, display))
         .catch((e) => handleError(e));
       return false
