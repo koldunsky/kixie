@@ -2,6 +2,9 @@
 // be executed in the renderer process for that window.
 // All of the Node.js APIs are available in this process.
 // renderer process
+const {
+  rgbToHex
+} = require('./colorFinctions');
 const mapNumbers = require('electron').remote.require('./src/mapNumbers')
 const withRendererCb = mapNumbers.withRendererCallback(x => x + 1)
 const withLocalCb = mapNumbers.withLocalCallback()
@@ -17,6 +20,7 @@ const {remote, desktopCapturer} = electron;
 const screen = remote.require('./src/screen').screen;
 
 const colorScreen = document.querySelector('#colorScreen');
+const colorCodes = document.querySelector('#colorCodes');
 
 function initScreen(scr) {
   return new Promise((resolve, reject) => {
@@ -39,7 +43,6 @@ function initScreen(scr) {
 }
 
 function start() {
-
   desktopCapturer.getSources({types: ['screen']}, (error, sources) => {
     if (error) throw error;
 
@@ -93,12 +96,22 @@ function getMouseCoordsWithCorrection() {
 }
 
 function handleColorPick() {
-  console.log(`#canvas_id_${currentDisplay.id}`);
-  console.dir(document.querySelector(`#canvas_id_${currentDisplay.id}`));
   const ctx = document.querySelector(`#canvas_id_${currentDisplay.id}`).getContext('2d');
   let {x, y} = getMouseCoordsWithCorrection();
-  const rgba = ctx.getImageData(x - 2, y - 2, 1, 1).data;
+  const rgba = ctx.getImageData(x - 3, y - 3, 1, 1).data;
+  const rgb = rgba.slice(0, 3);
   colorScreen.style.background = `rgba(${rgba[0]}, ${rgba[1]}, ${rgba[2]}, ${rgba[3] / 255})`;
+  colorCodes.innerHTML = `
+
+  <div class="row">
+    <div class="key">html:</div>
+    <div class="value">${rgbToHex(rgba)}</div>
+  </div>
+  <div class="row">
+    <div class="key">rgb:</div>
+    <div class="value">(${rgb.join(',')})</div>
+  </div>
+  `
 }
 
 function handleStream(stream, display) {
