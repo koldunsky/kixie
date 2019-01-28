@@ -6,7 +6,9 @@ const mapNumbers = require('electron').remote.require('./src/mapNumbers')
 const withRendererCb = mapNumbers.withRendererCallback(x => x + 1)
 const withLocalCb = mapNumbers.withLocalCallback()
 const SCALE = .2;
-console.log(withRendererCb, withLocalCb)
+console.log(withRendererCb, withLocalCb);
+let currentDisplay = null;
+let currentCanvas = null;
 // [undefined, undefined, undefined], [2, 3, 4]
 
 
@@ -16,37 +18,51 @@ const screen = remote.require('./src/screen').screen;
 
 const colorScreen = document.querySelector('#colorScreen');
 
+function initScreen(scr) {
+  return new Promise((resolve, reject) => {
+    const displays = screen.getAllDisplays();
 
-// In the renderer process.
-desktopCapturer.getSources({types: ['screen']}, (error, sources) => {
-  if (error) throw error;
+    const [display] = displays.filter((d) => d.id === parseInt(scr.display_id, 10));
 
-  const multipleScreens = sources.filter((screen) => /^Screen \d{0,2}$/.test(screen.name));
-  const displays = screen.getAllDisplays();
+    // setTimeout(resolve, 10000);
+    getUserMedia(scr, display)
+      .then((stream) => {
+        handleStream(stream, display)
+          .then(resolve);
+      })
+      .catch((e) => {
+        handleError(e);
+        reject(e);
+      });
+    return false
+  });
+}
 
-  if (multipleScreens.length) {
-    multipleScreens.forEach((screen) => {
-      const [display] = displays.filter((d) => d.id === parseInt(screen.display_id, 10));
+function start() {
 
-      console.info(screen, displays);
+  desktopCapturer.getSources({types: ['screen']}, (error, sources) => {
+    if (error) throw error;
 
-      handleCursor([screen]);
-      getUserMedia(screen, display).then((stream) => handleStream(stream, display))
-        .catch((e) => handleError(e));
-      return false
-    })
-  }
+    const sourcePromises = [];
+    const multipleScreens = sources.filter((screen) => /^Screen \d{0,2}$/.test(screen.name));
+    const [entireScreen] = sources.filter((source) => source.name === 'Entire screen');
 
-  for (let i = 0; i < sources.length; ++i) {
-    if (sources[i].name === 'Entire screen') {
-      const display = screen.getPrimaryDisplay();
-      handleCursor([sources[i]]);
-      getUserMedia(sources[i], display).then((stream) => handleStream(stream, display))
-        .catch((e) => handleError(e));
-      return
+    if (multipleScreens.length) {
+      multipleScreens.forEach((scr) => {
+        sourcePromises.push(initScreen(scr));
+      })
+    } else {
+      sourcePromises.push(initScreen(entireScreen));
     }
-  }
-});
+
+
+    console.info(sourcePromises);
+
+    Promise.all(sourcePromises).then(() => {
+      handleCursor();
+    })
+  });
+}
 
 function getUserMedia(screen, display) {
   const {bounds, scaleFactor} = display;
@@ -67,72 +83,82 @@ function getUserMedia(screen, display) {
   });
 }
 
+function getMouseCoordsWithCorrection() {
+  const {x, y} = screen.getCursorScreenPoint();
+
+  return {
+    x: x + (currentDisplay.bounds.x * -1),
+    y: y +(currentDisplay.bounds.y * -1),
+}
+}
+
+function handleColorPick() {
+  console.log(`#canvas_id_${currentDisplay.id}`);
+  console.dir(document.querySelector(`#canvas_id_${currentDisplay.id}`));
+  const ctx = document.querySelector(`#canvas_id_${currentDisplay.id}`).getContext('2d');
+  let {x, y} = getMouseCoordsWithCorrection();
+  const rgba = ctx.getImageData(x - 2, y - 2, 1, 1).data;
+  colorScreen.style.background = `rgba(${rgba[0]}, ${rgba[1]}, ${rgba[2]}, ${rgba[3] / 255})`;
+}
+
 function handleStream(stream, display) {
-  const {scaleFactor} = display;
-  let {width, height} = stream.getVideoTracks()[0].getSettings();
-  width = width / scaleFactor;
-  height = height / scaleFactor;
-  const canvas = document.createElement('canvas');
-  const ctx = canvas.getContext('2d');
-  const video = document.createElement('video');
-  video.style.width = `${width}px`;
-  video.style.height = `${height}px`;
-  canvas.style.width = `${width}px`;
-  canvas.style.height = `${height}px`;
-  canvas.width = width;
-  canvas.height = height;
+  return new Promise((resolve, reject) => {
+    const {scaleFactor} = display;
+    let {width, height} = stream.getVideoTracks()[0].getSettings();
+    width = width / scaleFactor;
+    height = height / scaleFactor;
+    const canvas = document.createElement('canvas');
+    const ctx = canvas.getContext('2d');
+    const video = document.createElement('video');
+    video.style.width = `${width}px`;
+    video.style.height = `${height}px`;
+    video.id = `video_id_${display.id}`;
+    canvas.style.width = `${width}px`;
+    canvas.style.height = `${height}px`;
+    canvas.width = width;
+    canvas.height = height;
+    canvas.id = `canvas_id_${display.id}`;
 
-  document.querySelector('#videoSources').appendChild(canvas);
-  document.querySelector('#videoSources').appendChild(video);
+    document.querySelector('#videoSources').appendChild(canvas);
+    document.querySelector('#videoSources').appendChild(video);
 
-  video.srcObject = stream;
-  video.onloadedmetadata = (e) => video.play();
+    video.srcObject = stream;
+    video.onloadedmetadata = (e) => video.play();
 
-  video.addEventListener('play', function () {
-    var $this = this; //cache
-    (function loop() {
-      if (!$this.paused && !$this.ended) {
-        ctx.drawImage($this, 0, 0, width, height);
-        const {x, y} = screen.getCursorScreenPoint();
-        const rgba = ctx.getImageData(x - 2, y - 2, 1, 1).data;
-        colorScreen.style.background = `rgba(${rgba[0]}, ${rgba[1]}, ${rgba[2]}, ${rgba[3] / 255})`;
-        setTimeout(loop, 1000 / 60); // drawing at 30fps
-      }
-    })();
-  }, 0);
+    video.addEventListener('play', function () {
+      var $this = this; //cache
+      (function loop() {
+        if (!$this.paused && !$this.ended) {
+          ctx.drawImage($this, 0, 0, width, height);
+          setTimeout(loop, 1000 / 60); // drawing at 30fps
+        }
+      })();
+      resolve(this); // Video source
+    }, 0);
+  });
 }
 
 function handleError(e) {
   console.log(e)
 }
 
-function handleCursor(screens) {
+function handleCursor() {
   setInterval(() => {
+    const cursor = screen.getCursorScreenPoint();
     const display = screen.getDisplayMatching({
-      ...screen.getCursorScreenPoint(),
+      x: cursor.x - 2,
+      y: cursor.y - 2,
       width: 1,
       height: 1
     });
-    console.info(screen.getCursorScreenPoint());
-    console.info(display);
+
+    if (!currentDisplay || currentDisplay.id !== display.id) {
+      currentDisplay = display;
+    }
+
+    handleColorPick();
+    console.info(currentDisplay);
   }, 16);
-  console.info(screens);
 }
 
-function moveMouseImmitationMouse() {
-  const pointer = document.getElementById('pointer');
-  const {y: top, x: left} = screen.getCursorScreenPoint();
-  pointer.style.top = top * SCALE + 'px';
-  pointer.style.left = left * SCALE + 'px';
-}
-
-function renderDesktopImmitation() {
-  const [{size: {width, height}}] = screen.getAllDisplays();
-  const immitator = document.getElementById('screenImmitation');
-  immitator.style.width = width * SCALE + 'px';
-  immitator.style.height = height * SCALE + 'px';
-
-  // setInterval(moveMouseImmitationMouse, 16);
-}
-
-renderDesktopImmitation();
+start();
