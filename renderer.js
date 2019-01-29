@@ -3,7 +3,9 @@
 // All of the Node.js APIs are available in this process.
 // renderer process
 const {
-  rgbToHex
+  rgbToHex,
+  rgbToHsv,
+  rgbToCmyk
 } = require('./colorFinctions');
 const mapNumbers = require('electron').remote.require('./src/mapNumbers')
 const withRendererCb = mapNumbers.withRendererCallback(x => x + 1)
@@ -91,8 +93,8 @@ function getMouseCoordsWithCorrection() {
 
   return {
     x: x + (currentDisplay.bounds.x * -1),
-    y: y +(currentDisplay.bounds.y * -1),
-}
+    y: y + (currentDisplay.bounds.y * -1),
+  }
 }
 
 function handleColorPick() {
@@ -102,15 +104,22 @@ function handleColorPick() {
   const rgb = rgba.slice(0, 3);
   colorScreen.style.background = `rgba(${rgba[0]}, ${rgba[1]}, ${rgba[2]}, ${rgba[3] / 255})`;
   colorCodes.innerHTML = `
-
-  <div class="row">
-    <div class="key">html:</div>
-    <div class="value">${rgbToHex(rgba)}</div>
-  </div>
-  <div class="row">
-    <div class="key">rgb:</div>
-    <div class="value">(${rgb.join(',')})</div>
-  </div>
+    <div class="row">
+      <div class="key">html:</div>
+      <div class="value">${rgbToHex(rgba)}</div>
+    </div>
+    <div class="row">
+      <div class="key">rgb:</div>
+      <div class="value">(${rgb.join(',')})</div>
+    </div>
+    <div class="row">
+      <div class="key">cmyk:</div>
+      <div class="value">(${rgbToCmyk(rgb).join(',')})</div>
+    </div>
+    <div class="row">
+      <div class="key">hsv:</div>
+      <div class="value">(${rgbToHsv(rgb).join(',')})</div>
+    </div>
   `
 }
 
