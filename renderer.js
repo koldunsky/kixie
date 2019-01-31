@@ -6,7 +6,7 @@ const {
   rgbToHex,
   rgbToHsv,
   rgbToCmyk
-} = require('./colorFinctions');
+} = require('./src/lib/colorFinctions');
 const mapNumbers = require('electron').remote.require('./src/mapNumbers')
 const withRendererCb = mapNumbers.withRendererCallback(x => x + 1)
 const withLocalCb = mapNumbers.withLocalCallback()
