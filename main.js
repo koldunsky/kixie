@@ -6,17 +6,19 @@ const {registerGlobalShortcuts, unregisterGlobalShortcuts} = require('./src/shor
 
 // Keep a global reference of the window object, if you don't, the window will
 // be closed automatically when the JavaScript object is garbage collected.
-let mainWindow
+let mainWindow;
 
 function createWindow () {
   // Create the browser window.
   mainWindow = new BrowserWindow({
-    width: 800,
-    height: 600,
+    width: 200,
+    height: 250,
     icon: '/Users/somebody/images/window.png',
     webPreferences: {
       nodeIntegration: true
-    }
+    },
+    // transparent: true,
+    frame: false
   })
 
   // and load the index.html of the app.
