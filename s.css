@@ -1,0 +1,42 @@
+body {
+  -webkit-app-region: drag;
+  font-family: Menlo, Courier, 'Courier New', monospace;
+  font-size: 10px;
+  height:100%;
+  width: 100%;
+}
+
+.colorScreen {
+  width: 35px;
+  height: 35px;
+  transition: .05s ease all;
+  float: left;
+  border-radius: 2px;
+  border: 1px solid rgba(0,0,0,.1);
+  margin-right: 10px;
+
+}
+
+
+.row {
+  display: block;
+  margin-bottom: 2px;
+}
+
+.key {
+  display: inline-block;
+  text-transform: uppercase;
+}
+
+.value {
+  display: inline-block;
+  text-transform: uppercase;
+}
+
+.colorCodes {
+  float: left;
+}
+
+#videoSources {
+  display: none;
+}

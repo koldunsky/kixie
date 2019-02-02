@@ -7,15 +7,8 @@ const {
   rgbToHsv,
   rgbToCmyk
 } = require('./src/lib/colorFinctions');
-const mapNumbers = require('electron').remote.require('./src/mapNumbers')
-const withRendererCb = mapNumbers.withRendererCallback(x => x + 1)
-const withLocalCb = mapNumbers.withLocalCallback()
-const SCALE = .2;
-console.log(withRendererCb, withLocalCb);
-let currentDisplay = null;
-let currentCanvas = null;
-// [undefined, undefined, undefined], [2, 3, 4]
 
+let currentDisplay = null;
 
 const electron = require('electron');
 const {remote, desktopCapturer} = electron;
@@ -88,9 +81,7 @@ function getUserMedia(screen, display) {
   });
 }
 
-function getMouseCoordsWithCorrection() {
-  const {x, y} = screen.getCursorScreenPoint();
-
+function getMouseCoordsWithCorrection({x, y}) {
   return {
     x: x + (currentDisplay.bounds.x * -1),
     y: y + (currentDisplay.bounds.y * -1),
@@ -99,11 +90,15 @@ function getMouseCoordsWithCorrection() {
 
 function handleColorPick() {
   const ctx = document.querySelector(`#canvas_id_${currentDisplay.id}`).getContext('2d');
-  let {x, y} = getMouseCoordsWithCorrection();
+  const point= screen.getCursorScreenPoint();
+  let {x, y} = getMouseCoordsWithCorrection(point);
   const rgba = ctx.getImageData(x - 3, y - 3, 1, 1).data;
   const rgb = rgba.slice(0, 3);
   colorScreen.style.background = `rgba(${rgba[0]}, ${rgba[1]}, ${rgba[2]}, ${rgba[3] / 255})`;
   colorCodes.innerHTML = `
+    <div class="row">
+        pixel at [${point.x}:${point.y}]
+    </div>
     <div class="row">
       <div class="key">html:</div>
       <div class="value">${rgbToHex(rgba)}</div>

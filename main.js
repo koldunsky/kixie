@@ -1,28 +1,31 @@
 // Modules to control application life and create native browser window
 const electron = require('electron');
-const { globalShortcut } = require('electron');
-const {app, BrowserWindow, Tray} = electron;
+const path = require('path');
+const {globalShortcut} = require('electron');
+const {app, BrowserWindow, Tray, Menu } = electron;
 const {registerGlobalShortcuts, unregisterGlobalShortcuts} = require('./src/shortcutActions');
 
 // Keep a global reference of the window object, if you don't, the window will
 // be closed automatically when the JavaScript object is garbage collected.
 let mainWindow;
+let tray = null;
 
-function createWindow () {
+function createWindow() {
   // Create the browser window.
   mainWindow = new BrowserWindow({
-    width: 200,
-    height: 250,
-    icon: '/Users/somebody/images/window.png',
+    width: 210,
+    height: 80,
+    // https://stackoverflow.com/a/31538436
+    // icon: path.join(__dirname, 'src/icons/png/64x64.png'),
     webPreferences: {
       nodeIntegration: true
     },
     // transparent: true,
-    frame: false
+    frame: false,
   })
 
   // and load the index.html of the app.
-  mainWindow.loadFile('index.html')
+  mainWindow.loadFile('index.html');
 
   // Open the DevTools.
   // mainWindow.webContents.openDevTools()
@@ -34,16 +37,6 @@ function createWindow () {
     // when you should delete the corresponding element.
     mainWindow = null
   });
-
-  // tray = new Tray('./icons/icon.png');
-  // const contextMenu = Menu.buildFromTemplate([
-  //   { label: 'Item1', type: 'radio' },
-  //   { label: 'Item2', type: 'radio' },
-  //   { label: 'Item3', type: 'radio', checked: true },
-  //   { label: 'Item4', type: 'radio' }
-  // ])
-  // tray.setToolTip('This is my application.');
-  // tray.setContextMenu(contextMenu)
 }
 
 // This method will be called when Electron has finished
@@ -52,6 +45,23 @@ function createWindow () {
 app.on('ready', createWindow)
 
 app.on('ready', registerGlobalShortcuts)
+
+app.on('ready', function () {
+  tray = new Tray(path.join(__dirname, 'src/icons/png/16x16.png'));
+  // const contextMenu = Menu.buildFromTemplate([
+  //   {label: 'Item1', type: 'radio'},
+  //   {label: 'Item2', type: 'radio'},
+  //   {label: 'Item3', type: 'radio', checked: true},
+  //   {label: 'Item4', type: 'radio'}
+  // ])
+  // tray.setToolTip('This is my application.');
+  // tray.setContextMenu(contextMenu)
+
+  tray.on('click', () => {
+    mainWindow.focus();
+    console.warn('clicked on tray');
+  });
+});
 
 // Quit when all windows are closed.
 app.on('window-all-closed', function () {

@@ -2,33 +2,22 @@
 <html>
   <head>
     <meta charset="UTF-8">
-    <title>Hello World!</title>
+    <title>kixit - simple colorpicker</title>
+    <link rel="stylesheet" href="./s.css">
   </head>
-  <body style="-webkit-app-region: drag">
+  <body style="-webkit-app-region: drag;">
     <!-- All of the Node.js APIs are available in this renderer process. -->
     <div
         id="colorScreen"
-        style="width: 20px; height: 20px; ,margin-bottom: 20px; -webkit-app-region: no-drag"
+        class="colorScreen"
     ></div>
     <div
         id="colorCodes"
+        class="colorCodes"
     ></div>
     <div id="videoSources">
 
     </div>
-
-    <div
-        id="screenImmitation"
-        style="border: 2px solid blue; position: relative;"
-    >
-      <div
-          id="pointer"
-          style="width: 4px; height: 4px; background: red; position: absolute"
-      >
-      </div>
-    </div>
-
-
     <script>
       // You can also require other files to run in this process
       require('./renderer.js')
