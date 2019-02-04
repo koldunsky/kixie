@@ -137,7 +137,7 @@ function handleStream(stream, display) {
     canvas.id = `canvas_id_${display.id}`;
 
     document.querySelector('#videoSources').appendChild(canvas);
-    document.querySelector('#videoSources').appendChild(video);
+    // document.querySelector('#videoSources').appendChild(video);
 
     video.srcObject = stream;
     video.onloadedmetadata = (e) => video.play();

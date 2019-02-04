@@ -18,7 +18,7 @@ body {
   height: 35px;
   transition: .05s ease all;
   float: left;
-  border-radius: 2px;
+  border-radius: 3px;
   border: 1px solid rgba(0,0,0,.1);
   margin-right: 10px;
 
