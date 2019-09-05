@@ -6,7 +6,7 @@ const {
   rgbToHex,
   rgbToHsv,
   rgbToCmyk
-} = require('./src/lib/colorFinctions');
+} = require('./src/lib/colorFunctions');
 
 let currentDisplay = null;
 
@@ -16,6 +16,7 @@ const screen = remote.require('./src/screen').screen;
 
 const colorScreen = document.querySelector('#colorScreen');
 const colorCodes = document.querySelector('#colorCodes');
+let cursor = {x: 0, y: 0};
 
 function initScreen(scr) {
   return new Promise((resolve, reject) => {
@@ -53,9 +54,6 @@ function start() {
       sourcePromises.push(initScreen(entireScreen));
     }
 
-
-    console.info(sourcePromises);
-
     Promise.all(sourcePromises).then(() => {
       handleCursor();
     })
@@ -81,23 +79,17 @@ function getUserMedia(screen, display) {
   });
 }
 
-function getMouseCoordsWithCorrection({x, y}) {
-  return {
-    x: x + (currentDisplay.bounds.x * -1),
-    y: y + (currentDisplay.bounds.y * -1),
-  }
-}
-
 function handleColorPick() {
+  if (!currentDisplay) {
+    return null  ;
+  }
   const ctx = document.querySelector(`#canvas_id_${currentDisplay.id}`).getContext('2d');
-  const point= screen.getCursorScreenPoint();
-  let {x, y} = getMouseCoordsWithCorrection(point);
-  const rgba = ctx.getImageData(x - 3, y - 3, 1, 1).data;
+  const rgba = ctx.getImageData(0, 0, 1, 1).data;
   const rgb = rgba.slice(0, 3);
   colorScreen.style.background = `rgba(${rgba[0]}, ${rgba[1]}, ${rgba[2]}, ${rgba[3] / 255})`;
   colorCodes.innerHTML = `
     <div class="row">
-        pixel at [${point.x}:${point.y}]
+        pixel at [${cursor.x}:${cursor.y}]
     </div>
     <div class="row">
       <div class="key">html:</div>
@@ -130,26 +122,31 @@ function handleStream(stream, display) {
     video.style.width = `${width}px`;
     video.style.height = `${height}px`;
     video.id = `video_id_${display.id}`;
-    canvas.style.width = `${width}px`;
-    canvas.style.height = `${height}px`;
-    canvas.width = width;
-    canvas.height = height;
+    canvas.style.width = '1px';
+    canvas.style.height = '1px';
+    canvas.width = 1;
+    canvas.height = 1;
     canvas.id = `canvas_id_${display.id}`;
 
     document.querySelector('#videoSources').appendChild(canvas);
-    // document.querySelector('#videoSources').appendChild(video);
 
     video.srcObject = stream;
     video.onloadedmetadata = (e) => video.play();
 
     video.addEventListener('play', function () {
-      var $this = this; //cache
-      (function loop() {
-        if (!$this.paused && !$this.ended) {
-          ctx.drawImage($this, 0, 0, width, height);
-          setTimeout(loop, 1000 / 60); // drawing at 30fps
+      var thisVideo = this; //cache
+      console.info('play');
+
+      function loop() {
+        if (!thisVideo.paused && !thisVideo.ended) {
+          const {x, y} = cursor;
+          ctx.clearRect(0,0,width, height);
+          ctx.drawImage(thisVideo, -x+3, -y+3, width, height);
+          handleColorPick();
+          requestAnimationFrame(loop);
         }
-      })();
+      }
+      loop();
       resolve(this); // Video source
     }, 0);
   });
@@ -160,22 +157,19 @@ function handleError(e) {
 }
 
 function handleCursor() {
-  setInterval(() => {
-    const cursor = screen.getCursorScreenPoint();
-    const display = screen.getDisplayMatching({
-      x: cursor.x - 2,
-      y: cursor.y - 2,
-      width: 1,
-      height: 1
-    });
+  cursor = screen.getCursorScreenPoint();
+  const display = screen.getDisplayMatching({
+    x: cursor.x - 3,
+    y: cursor.y - 3,
+    width: 1,
+    height: 1
+  });
 
-    if (!currentDisplay || currentDisplay.id !== display.id) {
-      currentDisplay = display;
-    }
+  if (!currentDisplay || currentDisplay.id !== display.id) {
+    currentDisplay = display;
+  }
 
-    handleColorPick();
-    console.info(currentDisplay);
-  }, 16);
+  requestAnimationFrame(handleCursor);
 }
 
 start();

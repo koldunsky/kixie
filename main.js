@@ -13,8 +13,8 @@ let tray = null;
 function createWindow() {
   // Create the browser window.
   mainWindow = new BrowserWindow({
-    width: 210,
-    height: 80,
+    // width: 210,
+    // height: 80,
     // https://stackoverflow.com/a/31538436
     // icon: path.join(__dirname, 'src/icons/png/64x64.png'),
     webPreferences: {

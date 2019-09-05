@@ -16,12 +16,11 @@ body {
 .colorScreen {
   width: 35px;
   height: 35px;
-  transition: .05s ease all;
+  transition: .05s ease background-color;
   float: left;
   border-radius: 3px;
   border: 1px solid rgba(0,0,0,.1);
   margin-right: 10px;
-
 }
 
 
